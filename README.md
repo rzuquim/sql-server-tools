@@ -1,4 +1,5 @@
 sql-server-tools
 ================
 
-Scripts de SQL server que podem salvar sua vida
+a set of sql server scripts that saved my ass
+each one explains it self
