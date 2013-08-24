@@ -1,4 +1,13 @@
 
+-- ====================================
+-- Prints the script to correct wrong collations
+-- IF THE WRONG COLLUMN HAS AN INDEX YOU MUST MANNUALY DROP YOUR INDEX BEFORE RUNNINING THE CORRECTION
+-- ====================================
+
+DECLARE @CorrectCollation VARCHAR(128)
+
+SET @CorrectCollation = 'SQL_Latin1_General_CP1_CI_AS' -- examples: Latin1_General_CI_AS, SQL_Latin1_General_CP1_CI_AS
+
 IF object_id('tempdb..#wrong_collation') IS NOT NULL BEGIN 
     DROP TABLE #wrong_collation 
 END
@@ -13,11 +22,6 @@ CREATE TABLE #wrong_collation (
     [collation] NVARCHAR (128),
     [has_index] BIT)
 GO
-
-DECLARE @CorrectCollation VARCHAR(128)
-
-SET @CorrectCollation = 'SQL_Latin1_General_CP1_CI_AS' -- examples: Latin1_General_CI_AS, SQL_Latin1_General_CP1_CI_AS
-
 
 INSERT INTO #wrong_collation 
 SELECT [schema] = schema_name(t.schema_id),

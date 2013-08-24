@@ -1,4 +1,8 @@
 
+-- ===========================
+-- Fills the temporary #tables_space_used with database's biggest tables
+-- ===========================
+
 -- DROP TABLE #tables_space_used
 -- DROP TABLE #tables
 
@@ -51,9 +55,9 @@ SELECT [name] = name,
        [data_KB] = cast(REPLACE(data, 'KB', '') AS INT),
        [index_size_KB] = cast(REPLACE(index_size, 'KB', '') AS INT),
        [unused_KB] = cast(REPLACE(unused, 'KB', '') AS INT),
-       [idex_data_ratio] = cast(REPLACE(index_size, 'KB', '') AS INT) / 
-                           CASE WHEN (cast(REPLACE(data, 'KB', '') AS INT)) = 0
+       [idex_data_ratio] = CASE WHEN (cast(REPLACE(data, 'KB', '') AS INT)) = 0
                                 THEN NULL
                                 ELSE cast(REPLACE(index_size, 'KB', '') AS INT) / cast(REPLACE(data, 'KB', '') AS INT) END,
        [instant_of_measurement] = instant_of_measurement
 FROM #tables_space_used
+ORDER BY cast(REPLACE(data, 'KB', '') AS INT) DESC

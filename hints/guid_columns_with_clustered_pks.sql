@@ -1,8 +1,18 @@
 
-DROP TABLE #PKsUniqueClustered
-DROP TABLE #FKsEnvolvidas
+-- ========================
+-- Prints a script droping clustered pks and related fks
+-- and recreates the pks as nonclustered indexes
+-- ========================
 
-CREATE TABLE #PKsUniqueClustered (
+IF object_id('tempdb..#PKsGUIDClustered') IS NOT NULL BEGIN 
+  DROP TABLE #PKsGUIDClustered
+END 
+
+IF object_id('tempdb..#RelatedFKs') IS NOT NULL BEGIN 
+  DROP TABLE #RelatedFKs
+END 
+
+CREATE TABLE #PKsGUIDClustered (
   rownum INT IDENTITY(1,1),
   Table_Name VARCHAR(4000),
   PK_Name VARCHAR(4000) ,
@@ -10,7 +20,7 @@ CREATE TABLE #PKsUniqueClustered (
   SchemaName VARCHAR(4000)
 );
 
-CREATE TABLE #FKsEnvolvidas (
+CREATE TABLE #RelatedFKs (
   rownum INT IDENTITY(1,1),
   FK_Name VARCHAR(4000),
   SRC_Schema VARCHAR(1000),
@@ -24,7 +34,7 @@ CREATE TABLE #FKsEnvolvidas (
 -- ===========================
 -- Pks problemáticas com UNIQUEIDENTIFIER
 -- ===========================
-INSERT INTO #PKsUniqueClustered (SchemaName, Table_Name, PK_Name, Column_Name)
+INSERT INTO #PKsGUIDClustered (SchemaName, Table_Name, PK_Name, Column_Name)
 SELECT t.SchemaName, t.Table_Name, t.PK_Name, t.Column_Name
 FROM (SELECT [SchemaName] = OBJECT_SCHEMA_NAME(i.object_id),
              [Table_Name] = object_Name(i.object_id), 
@@ -44,22 +54,22 @@ FROM (SELECT [SchemaName] = OBJECT_SCHEMA_NAME(i.object_id),
        INNER JOIN sys.all_columns c_guid
                ON ic_guid.object_id = c_guid.object_id 
                   AND ic_guid.column_id = c_guid.column_id 
-                  AND c_guid.system_type_id = 36 -- system_type = 36 significa coluna UNIQUEIDENTIFIER
+                  AND c_guid.system_type_id = 36 -- system_type = 36 >> UNIQUEIDENTIFIER
   WHERE i.is_primary_key = 1 
-        AND i.type = 1) t-- type = 1 significa índice clustered WHERE Column_Name IS NOT NULL
+        AND i.type = 1) t-- type = 1 >> clustered
 WHERE Column_Name IS NOT NULL
 
 -- ===========================
--- Resolvendo possíveis fks que apontam para as pks problemáticas
+-- Related FKs
 -- ===========================
-INSERT INTO #FKsEnvolvidas (FK_Name, SRC_Schema, SRC_Tabela, SRC_Column, TRG_Schema, TRG_Tabela, TRG_Column)
+INSERT INTO #RelatedFKs (FK_Name, SRC_Schema, SRC_Tabela, SRC_Column, TRG_Schema, TRG_Tabela, TRG_Column)
 SELECT DISTINCT C.CONSTRAINT_NAME, CU.TABLE_SCHEMA, CU.TABLE_NAME, CU.COLUMN_NAME, CU2.TABLE_SCHEMA, CU2.TABLE_NAME, CU2.COLUMN_NAME
 FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS C
      INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE CU
              ON C.CONSTRAINT_NAME = CU.CONSTRAINT_NAME
      INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE CU2
              ON CU2.CONSTRAINT_NAME = C.UNIQUE_CONSTRAINT_NAME
-     INNER JOIN #PKsUniqueClustered pk
+     INNER JOIN #PKsGUIDClustered pk
              ON C.UNIQUE_CONSTRAINT_NAME = pk.PK_Name
 
 DECLARE @sql NVARCHAR(4000),
@@ -82,12 +92,11 @@ DECLARE @sql NVARCHAR(4000),
         @TRG_Column VARCHAR(1000)
 
 -- ===================
--- Removendo fks envolvidas
+-- Printing fk drops
 -- ===================
-
 SELECT @i_fk = 1,
        @max_fk = COUNT(rownum)
-FROM #FKsEnvolvidas
+FROM #RelatedFKs
 
 WHILE @i_fk < @max_fk + 1 BEGIN
 
@@ -95,7 +104,7 @@ WHILE @i_fk < @max_fk + 1 BEGIN
          @SRC_Tabela = SRC_Tabela, @SRC_Column = SRC_Column,
          @TRG_Schema = TRG_Schema, @TRG_Tabela = TRG_Tabela,
          @TRG_Column = TRG_Column
-  FROM #FKsEnvolvidas
+  FROM #RelatedFKs
   WHERE rownum = @i_fk
 
   SET @i_fk = @i_fk + 1
@@ -107,17 +116,16 @@ WHILE @i_fk < @max_fk + 1 BEGIN
 END
 
 -- ===========================
--- Recriando pks
+-- Recriating PKs
 -- ===========================
-
 SELECT @i_pk = 1,
        @max_pk = count(rownum)
-FROM #PKsUniqueClustered
+FROM #PKsGUIDClustered
 
 WHILE @i_pk < @max_pk + 1 BEGIN
 
   SELECT @TableName = Table_Name, @PK_Name = PK_Name, @Column_Name = Column_Name, @SchemaName = SchemaName
-  FROM #PKsUniqueClustered
+  FROM #PKsGUIDClustered
   WHERE rownum = @i_pk
   
   PRINT 'IF EXISTS (SELECT TOP 1 1 FROM sys.indexes i WHERE i.name = ''' + @PK_Name + ''' AND i.type = 1) BEGIN'
@@ -133,11 +141,11 @@ WHILE @i_pk < @max_pk + 1 BEGIN
 END
 
 -- ===========================
--- Recriando fks
+-- Recreating fks
 -- ===========================
 SELECT @i_fk = 1,
        @max_fk = COUNT(rownum)
-FROM #FKsEnvolvidas
+FROM #RelatedFKs
 
 WHILE @i_fk < @max_fk + 1 BEGIN
 
@@ -145,7 +153,7 @@ WHILE @i_fk < @max_fk + 1 BEGIN
          @SRC_Tabela = SRC_Tabela, @SRC_Column = SRC_Column,
          @TRG_Schema = TRG_Schema, @TRG_Tabela = TRG_Tabela,
          @TRG_Column = TRG_Column
-  FROM #FKsEnvolvidas
+  FROM #RelatedFKs
   WHERE rownum = @i_fk
 
   SET @i_fk = @i_fk + 1

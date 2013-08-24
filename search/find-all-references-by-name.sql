@@ -1,9 +1,17 @@
 
 -- =======================================================
--- Retorna todas as referências a uma determinada string em todos os artefatos do banco
+-- Searchs a term on the body of procedures, functions, triggers, views or checks
 -- =======================================================
 
-SELECT DISTINCT o.name, o.xtype
+DECLARE @query VARCHAR(1000) = '%query%'
+
+SELECT DISTINCT
+       [object_type] = CASE o.xtype
+                       WHEN 'C' THEN 'CHECK'
+                       WHEN 'TR' THEN 'TRIGGER'
+                       WHEN 'P' THEN 'PROCEDURE'
+                       WHEN 'V' THEN 'VIEW' END,
+       [object_name] = o.name 
 FROM syscomments c
 INNER JOIN sysobjects o ON c.id=o.id
-WHERE c.TEXT LIKE <query,,'%%'>
+WHERE c.TEXT LIKE @query

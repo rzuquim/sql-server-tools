@@ -1,4 +1,12 @@
 
+-- =======================
+-- Filtering sp_who2
+-- =======================
+
+DECLARE @db_name VARCHAR(1000) = '%%',
+        @login VARCHAR(1000) = '%%',
+        @hostname VARCHAR(1000) = '%%'
+
 DECLARE @sp_who TABLE(         
   spid INT,         
   status VARCHAR(MAX),
@@ -15,15 +23,11 @@ DECLARE @sp_who TABLE(
   requestid INT)  
 
 INSERT INTO @sp_who EXEC sp_who2
-
--- SELECT * FROM @sp_who
-
 SELECT spid, dbname, status, diskio, cputime, lastbatch, programname
 FROM @sp_who 
-WHERE 
-  dbname LIKE <dbname,,'%%'>
-  AND login LIKE <login,,'%%'>
-  AND hostname LIKE <hostname,,'%%'>
+WHERE dbname LIKE @db_name
+      AND login LIKE @login
+      AND hostname LIKE @hostname
 ORDER BY 
   diskio DESC
   ,cputime DESC 

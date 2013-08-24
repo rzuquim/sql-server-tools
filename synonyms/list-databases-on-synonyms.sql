@@ -1,6 +1,6 @@
 
 --- ===========
--- Verifica todos os bancos apontados pelos sinônimos
+-- List of distinct databases referenced by any existing synonym
 --- ===========
 
 SELECT DISTINCT
