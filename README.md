@@ -9,4 +9,4 @@ each one explains it self
 - faraujo
 - jalmeida
 - lbrugger
-- [aIexandre](https://github.com/aIexandre)aIexandre
+- [aIexandre](https://github.com/aIexandre)
