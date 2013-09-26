@@ -1,0 +1,29 @@
+-- http://stackoverflow.com/questions/1473073/comparing-two-t-sql-tables-for-diffs
+-- EXEC compareTables 'db1_name','dbo.table1','db2_name','dbo.table1'
+
+CREATE PROCEDURE compareTables @db1 NVARCHAR(100)
+	,@table1 NVARCHAR(100)
+	,@db2 NVARCHAR(100)
+	,@table2 NVARCHAR(100)
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	DECLARE @where NVARCHAR(MAX)
+	DECLARE @cmd NVARCHAR(MAX)
+
+	SET @where = ''
+
+	SELECT @where = @where + 'ISNULL(t1.' + NAME + ','''') <> ISNULL(t2.' + NAME + ','''') OR '
+	FROM sys.columns
+	WHERE object_id = OBJECT_ID(@table1)
+
+	SET @where = SUBSTRING(@where, 1, LEN(@where) - 3)
+	SET @cmd = 'SELECT t1.id FROM ' + @db1 + '.' + @table1 + ' t1 '
+	SET @cmd = @cmd + 'INNER JOIN ' + @db2 + '.' + @table2 + ' t2 ON t1.id = t2.id '
+	SET @cmd = @cmd + 'WHERE ' + @where
+
+	EXEC sp_executesql @cmd
+END
+GO
+
