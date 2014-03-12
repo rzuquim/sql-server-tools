@@ -10,3 +10,4 @@ each one explains it self
 - jalmeida
 - lbrugger
 - [aIexandre](https://github.com/aIexandre)
+- rkikuchi
