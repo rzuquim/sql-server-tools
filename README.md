@@ -2,7 +2,7 @@
 
 a set of sql server scripts that saved my ass
 
-each one explains it self
+each one explains itself 
 
 ## thanx ##
 - bgomes
